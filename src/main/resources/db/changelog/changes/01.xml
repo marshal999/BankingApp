@@ -6,4 +6,31 @@
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
 
+    <changeSet id="create-account-table" author="hamzehzadeh">
+
+        <createTable tableName="ACCOUNT">
+
+            <column name="ID_" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="PK_ACCOUNT" nullable="false"/>
+            </column>
+
+            <column name="ACCOUNT_NUMBER_" type="VARCHAR(15)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="UK_ACCOUNT_NUMBER"/>
+            </column>
+
+            <column name="OWNER_SSN" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="BALANCE_" type="NUMERIC">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="ACCOUNT"/>
+        </rollback>
+    </changeSet>
+
 </databaseChangeLog>
