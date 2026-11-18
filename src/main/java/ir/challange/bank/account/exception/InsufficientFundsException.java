@@ -1,4 +1,4 @@
-package ir.challange.bank.Account.exception;
+package ir.challange.bank.account.exception;
 
 public class InsufficientFundsException extends RuntimeException {
     public InsufficientFundsException(String accountId) {

@@ -1,4 +1,4 @@
-package ir.challange.bank.Account.dto;
+package ir.challange.bank.account.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

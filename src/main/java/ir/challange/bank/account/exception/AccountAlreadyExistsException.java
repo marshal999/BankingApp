@@ -1,4 +1,4 @@
-package ir.challange.bank.Account.exception;
+package ir.challange.bank.account.exception;
 
 public class AccountAlreadyExistsException extends RuntimeException {
     public AccountAlreadyExistsException(String message) {

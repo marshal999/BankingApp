@@ -1,0 +1,60 @@
+package ir.challange.bank.account;
+
+import ir.challange.bank.account.dto.CreateAccountRequest;
+import ir.challange.bank.account.exception.AccountAlreadyExistsException;
+import ir.challange.bank.account.exception.AccountNotFoundException;
+import ir.challange.bank.account.exception.InsufficientFundsException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+
+@Service
+@RequiredArgsConstructor
+public class AccountServiceImpl implements AccountService {
+
+    private final AccountRepository accountRepository;
+
+    @Override
+    @Transactional
+    public AccountEntity createAccount(CreateAccountRequest request) {
+
+        if (accountRepository.existsByAccountNumber(request.accountNumber()))
+            throw new AccountAlreadyExistsException(request.accountNumber());
+
+        AccountEntity account = AccountEntity
+                .builder()
+                .accountNumber(request.accountNumber())
+                .ownerSsn(request.ownerSsn())
+                .balance(BigDecimal.ZERO)
+                .build();
+
+        return accountRepository.save(account);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AccountEntity findByAccountNumber(String accountNumber) {
+        return accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new AccountNotFoundException(accountNumber));
+    }
+
+    @Override
+    @Transactional
+    public void credit(String accountNumber, BigDecimal amount) {
+
+        AccountEntity account = findByAccountNumber(accountNumber);
+        account.setBalance(account.getBalance().add(amount));
+    }
+
+    @Transactional
+    public void debit(String accountNumber, BigDecimal amount) {
+
+        AccountEntity account = findByAccountNumber(accountNumber);
+        if (account.getBalance().compareTo(amount) < 0)
+            throw new InsufficientFundsException(accountNumber);
+        account.setBalance(account.getBalance().subtract(amount));
+    }
+
+}

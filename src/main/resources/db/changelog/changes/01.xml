@@ -33,4 +33,66 @@
         </rollback>
     </changeSet>
 
+    <changeSet id="create-transaction-table" author="developer">
+
+        <createTable tableName="TRANSACTION">
+
+            <column name="ID_" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="PK_TRANSACTION" nullable="false"/>
+            </column>
+
+            <column name="IDEMPOTENCY_KEY_" type="VARCHAR(36)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="UK_TRANSACTION_IDEMPOTENCY_KEY"/>
+            </column>
+
+            <column name="TYPE_" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="SOURCE_ACCOUNT_ID_" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="DESTINATION_ACCOUNT_ID_" type="UUID"/>
+
+            <column name="AMOUNT_" type="NUMERIC">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="TIMESTAMP_" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="TRANSACTION"
+                baseColumnNames="SOURCE_ACCOUNT_ID_"
+                constraintName="FK_TRANSACTION_SOURCE_ACCOUNT"
+                referencedTableName="ACCOUNT"
+                referencedColumnNames="ID_"/>
+
+        <addForeignKeyConstraint
+                baseTableName="TRANSACTION"
+                baseColumnNames="DESTINATION_ACCOUNT_ID_"
+                constraintName="FK_TRANSACTION_DESTINATION_ACCOUNT"
+                referencedTableName="ACCOUNT"
+                referencedColumnNames="ID_"/>
+
+        <createIndex tableName="TRANSACTION"
+                     indexName="IDX_TRANSACTION_SOURCE_ACCOUNT">
+            <column name="SOURCE_ACCOUNT_ID_"/>
+        </createIndex>
+
+        <createIndex tableName="TRANSACTION"
+                     indexName="IDX_TRANSACTION_DESTINATION_ACCOUNT">
+            <column name="DESTINATION_ACCOUNT_ID_"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="TRANSACTION"/>
+        </rollback>
+
+    </changeSet>
+
 </databaseChangeLog>

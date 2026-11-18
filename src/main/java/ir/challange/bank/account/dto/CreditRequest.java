@@ -1,10 +1,11 @@
-package ir.challange.bank.Account.dto;
+package ir.challange.bank.account.dto;
 
+import ir.challange.bank.transaction.RecordableTransactionRequest;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public record CreditRequest (
+public record CreditRequest(
 
         @NotBlank(message = "Account number is required")
         @Size(min = 15, max = 15, message = "Account number must be exactly 15 characters")
@@ -13,5 +14,7 @@ public record CreditRequest (
         @DecimalMin(value = "0.0000", message = "amount cannot be negative")
         long amount,
 
-        String transactionId
-){}
+        @NotBlank(message = "Idempotency Key is required")
+        @Size(max = 36, message = "Idempotency key cannot exceed 36 characters")
+        String idempotencyKey
+) implements RecordableTransactionRequest {}

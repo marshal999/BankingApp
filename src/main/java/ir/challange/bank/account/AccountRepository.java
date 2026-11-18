@@ -1,4 +1,4 @@
-package ir.challange.bank.Account;
+package ir.challange.bank.account;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
