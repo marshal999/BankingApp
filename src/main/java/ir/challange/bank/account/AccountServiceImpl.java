@@ -2,7 +2,7 @@ package ir.challange.bank.account;
 
 import ir.challange.bank.account.dto.CreateAccountRequest;
 import ir.challange.bank.account.exception.AccountAlreadyExistsException;
-import ir.challange.bank.account.exception.AccountNotFoundException;
+import ir.challange.bank.account.exception.UnknownAccountException;
 import ir.challange.bank.account.exception.InsufficientFundsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,7 +37,7 @@ public class AccountServiceImpl implements AccountService {
     @Transactional(readOnly = true)
     public AccountEntity findByAccountNumber(String accountNumber) {
         return accountRepository.findByAccountNumber(accountNumber)
-                .orElseThrow(() -> new AccountNotFoundException(accountNumber));
+                .orElseThrow(() -> new UnknownAccountException(accountNumber));
     }
 
     @Override
