@@ -67,7 +67,12 @@ public class AccountServiceImpl implements AccountService {
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void transfer(String sourceAccountNumber, String destinationAccountNumber, BigDecimal amount) {
-        debit(sourceAccountNumber, amount);
-        credit(destinationAccountNumber, amount);
+        if (sourceAccountNumber.compareTo(destinationAccountNumber) < 0) {
+            debit(sourceAccountNumber, amount);
+            credit(destinationAccountNumber, amount);
+        } else {
+            credit(destinationAccountNumber, amount);
+            debit(sourceAccountNumber, amount);
+        }
     }
 }
