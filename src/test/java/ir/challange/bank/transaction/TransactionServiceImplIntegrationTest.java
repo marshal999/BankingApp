@@ -9,6 +9,7 @@ import ir.challange.bank.transaction.dto.TransferRequest;
 import ir.challange.bank.account.exception.InsufficientFundsException;
 import ir.challange.bank.account.exception.UnknownAccountException;
 import ir.challange.bank.transaction.exception.IdempotencyKeyConflictException;
+import ir.challange.bank.transaction.exception.SameSourceAndDestinationTransferException;
 import ir.challange.bank.transaction.exception.TransactionAlreadyFailedException;
 import ir.challange.bank.transaction.exception.TransactionExpiredException;
 import ir.challange.bank.transaction.mapper.TransactionMapperRegistry;
@@ -703,6 +704,28 @@ class TransactionServiceImplIntegrationTest {
         assertThat(transactionRepository.count()).isEqualTo(transactionCountBefore);
     }
 
+    @Test
+    void transfer_identicalSourceAndDestination_noTransactionIsRecorded() {
+
+        String sourceAccountNumber = "884456734012347";
+        String destinationAccountNumber = "884456734012347";
+        String idempotencyKey = "transfer-identical-sources-001";
+        accountService.createAccount(new CreateAccountRequest(destinationAccountNumber, "0012345679"));
+        long transactionCountBefore = transactionRepository.count();
+        TransferRequest request = new TransferRequest(
+                sourceAccountNumber,
+                destinationAccountNumber,
+                40,
+                idempotencyKey);
+
+        assertThatThrownBy(() ->
+                transactionService.transfer(request))
+                .isInstanceOf(SameSourceAndDestinationTransferException.class);
+        AccountEntity destination = accountService.findByAccountNumber(destinationAccountNumber);
+        assertThat(destination.getBalance()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(transactionRepository.existsByIdempotencyKey(idempotencyKey)).isFalse();
+        assertThat(transactionRepository.count()).isEqualTo(transactionCountBefore);
+    }
 //    @Test
 //    void transfer_failedTransaction_throwsTransactionAlreadyFailed() {
 //
