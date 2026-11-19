@@ -2,6 +2,7 @@ package ir.challange.bank.transaction.dto;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record DebitRequest (
@@ -10,7 +11,7 @@ public record DebitRequest (
         @Size(min = 15, max = 15, message = "Account number must be exactly 15 characters")
         String accountNumber,
 
-        @DecimalMin(value = "0.0000", message = "amount cannot be negative")
+        @Positive(message = "amount must be positive")
         long amount,
 
         @NotBlank(message = "Idempotency Key is required")

@@ -13,7 +13,11 @@ import ir.challange.bank.transaction.exception.SameSourceAndDestinationTransferE
 import ir.challange.bank.transaction.exception.TransactionAlreadyFailedException;
 import ir.challange.bank.transaction.exception.TransactionExpiredException;
 import ir.challange.bank.transaction.mapper.TransactionMapperRegistry;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -44,6 +48,9 @@ class TransactionServiceImplIntegrationTest {
 
     @Autowired
     private TransactionMapperRegistry transactionMapperRegistry;
+
+    @Autowired
+    private Validator validator;
 
     // region Credit tests
 
@@ -252,6 +259,16 @@ class TransactionServiceImplIntegrationTest {
             start.countDown();
             executor.shutdownNow();
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {0, -1, -100})
+    void credit_amountMustBePositive(long amount) {
+        CreditRequest request = new CreditRequest("888456789012345", amount, "credit-validation-test-001");
+
+        assertThat(validator.validate(request))
+                .extracting(ConstraintViolation::getMessage)
+                .contains("amount must be positive");
     }
 
     // endregion
@@ -490,6 +507,20 @@ class TransactionServiceImplIntegrationTest {
             start.countDown();
             executor.shutdownNow();
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {0, -1, -100})
+    void debit_amountMustBePositive(long amount) {
+        DebitRequest request = new DebitRequest(
+                "888456789012345",
+                amount,
+                "debit-validation-test-001"
+        );
+
+        assertThat(validator.validate(request))
+                .extracting(ConstraintViolation::getMessage)
+                .contains("amount must be positive");
     }
 
     // endregion
@@ -917,7 +948,25 @@ class TransactionServiceImplIntegrationTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(longs = {0, -1, -100})
+    void transfer_amountMustBePositive(long amount) {
+        TransferRequest request = new TransferRequest(
+                "888456789012345",
+                "888456789012346",
+                amount,
+                "transfer-validation-test-001");
+
+        assertThat(validator.validate(request))
+                .extracting(ConstraintViolation::getMessage)
+                .contains("amount must be positive");
+    }
+
     // endregion
+
+
+
+
 
 
 

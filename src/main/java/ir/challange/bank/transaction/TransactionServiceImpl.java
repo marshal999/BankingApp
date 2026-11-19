@@ -10,6 +10,7 @@ import ir.challange.bank.transaction.dto.TransferRequest;
 import ir.challange.bank.transaction.exception.IdempotencyKeyConflictException;
 import ir.challange.bank.transaction.exception.SameSourceAndDestinationTransferException;
 import ir.challange.bank.transaction.mapper.TransactionMapperRegistry;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -31,7 +32,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
-    public void credit(CreditRequest request) {
+    public void credit(@Valid CreditRequest request) {
 
         transactionClaimService.ensureExists(request);
         TransactionEntity tx = transactionRepository
@@ -49,7 +50,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional(noRollbackFor = InsufficientFundsException.class)
-    public void debit(DebitRequest request) {
+    public void debit(@Valid DebitRequest request) {
 
         transactionClaimService.ensureExists(request);
         TransactionEntity tx = transactionRepository
@@ -72,7 +73,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional(noRollbackFor = InsufficientFundsException.class)
-    public void transfer(TransferRequest request) {
+    public void transfer(@Valid TransferRequest request) {
 
         if (request.destinationAccountNumber().equals(request.sourceAccountNumber()))
             throw new SameSourceAndDestinationTransferException();
