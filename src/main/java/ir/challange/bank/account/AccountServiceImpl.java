@@ -41,11 +41,16 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new UnknownAccountException(accountNumber));
     }
 
+    private AccountEntity findByAccountNumberForUpdate(String accountNumber) {
+        return accountRepository.findByAccountNumberForUpdate(accountNumber)
+                .orElseThrow(() -> new UnknownAccountException(accountNumber));
+    }
+
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void credit(String accountNumber, BigDecimal amount) {
 
-        AccountEntity account = findByAccountNumber(accountNumber);
+        AccountEntity account = findByAccountNumberForUpdate(accountNumber);
         account.setBalance(account.getBalance().add(amount));
     }
 
@@ -53,7 +58,7 @@ public class AccountServiceImpl implements AccountService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void debit(String accountNumber, BigDecimal amount) {
 
-        AccountEntity account = findByAccountNumber(accountNumber);
+        AccountEntity account = findByAccountNumberForUpdate(accountNumber);
         if (account.getBalance().compareTo(amount) < 0)
             throw new InsufficientFundsException(accountNumber);
         account.setBalance(account.getBalance().subtract(amount));

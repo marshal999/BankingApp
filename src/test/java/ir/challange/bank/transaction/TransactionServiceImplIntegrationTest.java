@@ -16,6 +16,7 @@ import ir.challange.bank.transaction.mapper.TransactionMapperRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.math.BigDecimal;
@@ -208,6 +209,49 @@ class TransactionServiceImplIntegrationTest {
         assertThatThrownBy(() ->
                 transactionService.credit(request)).isInstanceOf(TransactionAlreadyFailedException.class);
         assertThat(transactionRepository.count()).isEqualTo(transactionCountBefore);
+    }
+
+    @Test
+    void credit_concurrentRequests_bothSucceed() throws Exception {
+
+        String accountNumber = "888456989012345";
+        accountService.createAccount(new CreateAccountRequest(accountNumber, "0012345678"));
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            List<CompletableFuture<Boolean>> futures = IntStream.range(0, 2)
+                    .mapToObj(i -> CompletableFuture.supplyAsync(() -> {
+                        ready.countDown();
+
+                        try {
+                            start.await();
+
+                            transactionService.credit(
+                                    new CreditRequest(accountNumber, 80, "credit-concurrency-" + i));
+
+                            return true;
+
+                        } catch (ObjectOptimisticLockingFailureException e) {
+                            return false;
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException(e);
+                        }
+                    }, executor))
+                    .toList();
+
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(15, TimeUnit.SECONDS);
+            assertThat(futures.stream().filter(CompletableFuture::join).count()).isEqualTo(2);
+            assertThat(accountService.findByAccountNumber(accountNumber).getBalance())
+                    .isEqualByComparingTo("160");
+
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+        }
     }
 
     // endregion
@@ -403,6 +447,50 @@ class TransactionServiceImplIntegrationTest {
         assertThat(transactionRepository.count()).isEqualTo(transactionCountBefore);
     }
 
+    @Test
+    void debit_concurrentRequests_onlyOneSucceeds() throws Exception {
+
+        String accountNumber = "888856789012345";
+        accountService.createAccount(new CreateAccountRequest(accountNumber, "0012345678"));
+        transactionService.credit(
+                new CreditRequest(accountNumber, 100, "ebit-concurrency-credit-001"));
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+
+        try {
+            List<CompletableFuture<Boolean>> futures = IntStream.range(0, 2)
+                    .mapToObj(i -> CompletableFuture.supplyAsync(() -> {
+                        ready.countDown();
+                        try {
+                            start.await();
+                            transactionService.debit(
+                                    new DebitRequest(accountNumber, 80, "debit-concurrency-" + i));
+
+                            return true;
+
+                        } catch (InsufficientFundsException e) {
+                            return false;
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException(e);
+                        }
+                    }, executor))
+                    .toList();
+
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .get(15, TimeUnit.SECONDS);
+            assertThat(futures.stream().filter(CompletableFuture::join).count()).isEqualTo(1);
+            assertThat(accountService.findByAccountNumber(accountNumber).getBalance())
+                    .isEqualByComparingTo("20");
+
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+        }
+    }
 
     // endregion
 
@@ -726,28 +814,113 @@ class TransactionServiceImplIntegrationTest {
         assertThat(transactionRepository.existsByIdempotencyKey(idempotencyKey)).isFalse();
         assertThat(transactionRepository.count()).isEqualTo(transactionCountBefore);
     }
-//    @Test
-//    void transfer_failedTransaction_throwsTransactionAlreadyFailed() {
-//
-//        String sourceAccountNumber = "888456789012345";
-//        String destinationAccountNumber = "888456789012346";
-//        String idempotencyKey = "transfer-failed-test-001";
-//
-//        accountService.createAccount(new CreateAccountRequest(sourceAccountNumber, "0012345678"));
-//        accountService.createAccount(new CreateAccountRequest(destinationAccountNumber, "0012345679"));
-//
-//        TransferRequest request = new TransferRequest(sourceAccountNumber, destinationAccountNumber, 100, idempotencyKey);
-//        TransactionEntity transaction = transactionMapperRegistry.getMapper(request).toEntity(request);
-//        transaction.setStatus(TransactionStatus.FAILED);
-//        transactionRepository.saveAndFlush(transaction);
-//        long transactionCountBefore = transactionRepository.count();
-//
-//        assertThatThrownBy(() ->
-//                transactionService.transfer(request)).isInstanceOf(TransactionAlreadyFailedException.class);
-//        assertThat(transactionRepository.count()).isEqualTo(transactionCountBefore);
-//    }
+    @Test
+    void transfer_failedTransaction_throwsTransactionAlreadyFailed() {
+
+        String sourceAccountNumber = "888451167012345";
+        String destinationAccountNumber = "888453159012346";
+        String idempotencyKey = "transfer-failed-test-001";
+
+        accountService.createAccount(new CreateAccountRequest(sourceAccountNumber, "0012345678"));
+        accountService.createAccount(new CreateAccountRequest(destinationAccountNumber, "0012345679"));
+
+        TransferRequest request = new TransferRequest(sourceAccountNumber, destinationAccountNumber, 100, idempotencyKey);
+        TransactionEntity transaction = transactionMapperRegistry.getMapper(request).toEntity(request);
+        transaction.setStatus(TransactionStatus.FAILED);
+        transactionRepository.saveAndFlush(transaction);
+        long transactionCountBefore = transactionRepository.count();
+
+        assertThatThrownBy(() ->
+                transactionService.transfer(request)).isInstanceOf(TransactionAlreadyFailedException.class);
+        assertThat(transactionRepository.count()).isEqualTo(transactionCountBefore);
+    }
+
+    @Test
+    void transfer_concurrentRequests_bothSucceed() throws Exception {
+
+        String sourceAccountNumber = "888415789012345";
+        String destinationAAccountNumber = "888456789012346";
+        String destinationBAccountNumber = "888456555012347";
+        accountService.createAccount(new CreateAccountRequest(sourceAccountNumber, "0012345678"));
+        accountService.createAccount(new CreateAccountRequest(destinationAAccountNumber, "0012345679"));
+        accountService.createAccount(new CreateAccountRequest(destinationBAccountNumber, "0012345680"));
+        transactionService.credit(
+                new CreditRequest(sourceAccountNumber, 200, "transfer-concurrency-credit-001"));
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            List<CompletableFuture<Boolean>> futures = List.of(
+                    CompletableFuture.supplyAsync(() -> {
+                        ready.countDown();
+                        try {
+                            start.await();
+
+                            transactionService.transfer(
+                                    new TransferRequest(
+                                            sourceAccountNumber,
+                                            destinationAAccountNumber,
+                                            80,
+                                            "transfer-concurrency-001"
+                                    ));
+
+                            return true;
+
+                        } catch (ObjectOptimisticLockingFailureException e) {
+                            return false;
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException(e);
+                        }
+                    }, executor),
+
+                    CompletableFuture.supplyAsync(() -> {
+                        ready.countDown();
+
+                        try {
+                            start.await();
+
+                            transactionService.transfer(
+                                    new TransferRequest(
+                                            sourceAccountNumber,
+                                            destinationBAccountNumber,
+                                            80,
+                                            "transfer-concurrency-002"
+                                    ));
+
+                            return true;
+
+                        } catch (ObjectOptimisticLockingFailureException e) {
+                            return false;
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException(e);
+                        }
+                    }, executor)
+            );
+
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .get(15, TimeUnit.SECONDS);
+            assertThat(futures.stream().filter(CompletableFuture::join).count()).isEqualTo(2);
+            assertThat(accountService.findByAccountNumber(sourceAccountNumber).getBalance())
+                    .isEqualByComparingTo("40");
+            assertThat(accountService.findByAccountNumber(destinationAAccountNumber).getBalance())
+                    .isEqualByComparingTo("80");
+            assertThat(accountService.findByAccountNumber(destinationBAccountNumber).getBalance())
+                    .isEqualByComparingTo("80");
+
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+        }
+    }
 
     // endregion
+
+
+
 
 
 
