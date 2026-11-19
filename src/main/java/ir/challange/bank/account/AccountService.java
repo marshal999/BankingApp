@@ -15,4 +15,6 @@ public interface AccountService {
 
     void debit(String accountNumber, BigDecimal amount);
 
+    void transfer(String sourceAccountNumber, String destinationAccountNumber, BigDecimal amount);
+
 }

@@ -33,7 +33,7 @@
         </rollback>
     </changeSet>
 
-    <changeSet id="create-transaction-table" author="developer">
+    <changeSet id="create-transaction-table" author="hamzehzadeh">
 
         <createTable tableName="TRANSACTION">
 
@@ -93,6 +93,18 @@
             <dropTable tableName="TRANSACTION"/>
         </rollback>
 
+    </changeSet>
+
+    <changeSet id="add-status-to-transaction-table" author="hamzehzadeh">
+
+        <addColumn tableName="TRANSACTION">
+            <column name="STATUS_" type="VARCHAR(255)" defaultValue="COMPLETED">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addDefaultValue
+                tableName="TRANSACTION" columnName="STATUS_" defaultValue="PENDING" columnDataType="VARCHAR(255)"/>
     </changeSet>
 
 </databaseChangeLog>

@@ -2,10 +2,11 @@ package ir.challange.bank.account;
 
 import ir.challange.bank.account.dto.CreateAccountRequest;
 import ir.challange.bank.account.exception.AccountAlreadyExistsException;
-import ir.challange.bank.account.exception.UnknownAccountException;
 import ir.challange.bank.account.exception.InsufficientFundsException;
+import ir.challange.bank.account.exception.UnknownAccountException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -41,14 +42,15 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void credit(String accountNumber, BigDecimal amount) {
 
         AccountEntity account = findByAccountNumber(accountNumber);
         account.setBalance(account.getBalance().add(amount));
     }
 
-    @Transactional
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void debit(String accountNumber, BigDecimal amount) {
 
         AccountEntity account = findByAccountNumber(accountNumber);
@@ -57,4 +59,10 @@ public class AccountServiceImpl implements AccountService {
         account.setBalance(account.getBalance().subtract(amount));
     }
 
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void transfer(String sourceAccountNumber, String destinationAccountNumber, BigDecimal amount) {
+        debit(sourceAccountNumber, amount);
+        credit(destinationAccountNumber, amount);
+    }
 }

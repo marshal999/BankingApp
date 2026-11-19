@@ -1,6 +1,6 @@
 package ir.challange.bank.transaction.mapper;
 
-import ir.challange.bank.transaction.RecordableTransactionRequest;
+import ir.challange.bank.transaction.dto.TransactionRequest;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -20,7 +20,7 @@ public class TransactionMapperRegistry {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends RecordableTransactionRequest> TransactionMapper<T> getMapper(T request) {
+    public <T extends TransactionRequest> TransactionMapper<T> getMapper(T request) {
 
         TransactionMapper<?> mapper = mappers.get(request.getClass());
         if (mapper == null)

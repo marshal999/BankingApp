@@ -33,6 +33,10 @@ public class TransactionEntity {
     @Column(name = "TYPE_", nullable = false, updatable = false)
     private TransactionType type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "STATUS_", nullable = false)
+    private TransactionStatus status;
+
     @NotNull(message = "Source account is required")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "SOURCE_ACCOUNT_ID_", nullable = false, updatable = false)
@@ -48,7 +52,7 @@ public class TransactionEntity {
     private BigDecimal amount;
 
     @NotNull(message = "Timestamp is required")
-    @Column(name = "TIMESTAMP_", nullable = false, updatable = false)
+    @Column(name = "TIMESTAMP_", nullable = false)
     private Instant timestamp;
 
     @PrePersist

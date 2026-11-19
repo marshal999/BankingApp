@@ -1,8 +1,10 @@
 package ir.challange.bank.transaction.mapper;
 
 import ir.challange.bank.account.AccountService;
-import ir.challange.bank.account.dto.TransferRequest;
+import ir.challange.bank.transaction.dto.DebitRequest;
+import ir.challange.bank.transaction.dto.TransferRequest;
 import ir.challange.bank.transaction.TransactionEntity;
+import ir.challange.bank.transaction.TransactionStatus;
 import ir.challange.bank.transaction.TransactionType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -25,6 +27,7 @@ public class TransferTransactionMapper implements TransactionMapper<TransferRequ
                 .sourceAccount(accountService.findByAccountNumber(request.sourceAccountNumber()))
                 .destinationAccount(accountService.findByAccountNumber(request.destinationAccountNumber()))
                 .amount(BigDecimal.valueOf(request.amount()))
+                .status(TransactionStatus.PENDING)
                 .build();
     }
 
@@ -32,5 +35,16 @@ public class TransferTransactionMapper implements TransactionMapper<TransferRequ
     public Class<TransferRequest> getRequestType() {
 
         return TransferRequest.class;
+    }
+
+    @Override
+    public boolean matches(TransferRequest request, TransactionEntity existing) {
+
+        if (request.sourceAccountNumber().equals(existing.getSourceAccount().getAccountNumber()) &&
+                request.destinationAccountNumber().equals(existing.getDestinationAccount().getAccountNumber()) &&
+                BigDecimal.valueOf(request.amount()).compareTo(existing.getAmount()) == 0 &&
+                request.idempotencyKey().equals(existing.getIdempotencyKey()))
+            return true;
+        return false;
     }
 }

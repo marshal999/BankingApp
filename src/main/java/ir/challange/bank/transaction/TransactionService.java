@@ -1,9 +1,9 @@
 package ir.challange.bank.transaction;
 
 
-import ir.challange.bank.account.dto.CreditRequest;
-import ir.challange.bank.account.dto.DebitRequest;
-import ir.challange.bank.account.dto.TransferRequest;
+import ir.challange.bank.transaction.dto.CreditRequest;
+import ir.challange.bank.transaction.dto.DebitRequest;
+import ir.challange.bank.transaction.dto.TransferRequest;
 
 public interface TransactionService {
 

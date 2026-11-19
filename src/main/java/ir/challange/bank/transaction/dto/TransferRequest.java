@@ -1,6 +1,5 @@
-package ir.challange.bank.account.dto;
+package ir.challange.bank.transaction.dto;
 
-import ir.challange.bank.transaction.RecordableTransactionRequest;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -20,4 +19,4 @@ public record TransferRequest (
         @NotBlank(message = "Idempotency Key is required")
         @Size(max = 36, message = "Idempotency key cannot exceed 36 characters")
         String idempotencyKey
-) implements RecordableTransactionRequest {}
+) implements TransactionRequest {}
