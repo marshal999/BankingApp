@@ -672,7 +672,7 @@ class TransactionServiceImplIntegrationTest {
     @Test
     void transfer_balanceIsInsufficient_transactionIsMarkedAsFailed() {
 
-        String sourceAccountNumber = "999456789012346";
+        String sourceAccountNumber = "999454489012346";
         String destinationAccountNumber = "999456789012347";
         String idempotencyKey = "it-transfer-insufficient-funds-001";
         accountService.createAccount(new CreateAccountRequest(sourceAccountNumber, "0012345678"));
